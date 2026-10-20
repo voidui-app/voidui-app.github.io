@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VoidUI — Point it at an API. It becomes an app.</title>
+<meta name="description" content="VoidUI is a 4.6 MB Windows viewer that renders any local or hosted HTTP API as a desktop app — HTML, 3-pane JSON, PDF, DOCX, XLSX, CSV. Write the backend in any language." />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="apple-touch-icon" href="icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --paper:#fbfbf9;
+  --surface:#ffffff;
+  --ink:#16181d;
+  --ink-2:#3d424c;
+  --ink-3:#6b7280;
+  --ink-4:#9aa1ab;
+  --rule:#e3e4e0;
+  --rule-2:#eef0ec;
+  --signal:#0d7d8c;
+  --signal-2:#0a626e;
+  --signal-wash:#e6f4f5;
+  --amber:#b45309;
+  --amber-wash:#fdf3e3;
+  --ok:#15803d;
+  --font:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --pane-l:250px;
+  --pane-m:370px;
+  --h1size:clamp(38px,6.2vw,74px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font);
+  background:var(--paper);
+  color:var(--ink);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:"ss01" 1;
+}
+a{color:inherit}
+code,kbd,pre{font-family:var(--mono)}
+::selection{background:var(--signal);color:#fff}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:2px}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+.rule{border:0;border-top:1px solid var(--rule)}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(251,251,249,.86);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--rule);
+}
+.bar{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.02em;font-size:17px}
+.mark-img{
+  width:28px;height:28px;border-radius:7px;display:block;object-fit:cover;
+}
+.h-icon{
+  width:calc(var(--h1size) * 2.04);height:calc(var(--h1size) * 2.04);
+  border-radius:calc(var(--h1size) * .24);display:block;object-fit:cover;
+  margin-top:2px;flex:none;
+}
+nav{display:flex;align-items:center;gap:26px;font-size:14px}
+nav a{color:var(--ink-2);text-decoration:none;transition:color .15s}
+nav a:hover{color:var(--ink)}
+nav a.dl{
+  color:#fff;background:var(--ink);padding:7px 14px;border-radius:6px;font-weight:500;
+}
+nav a.dl:hover{background:var(--signal)}
+
+/* ---------- hero ---------- */
+.hero{padding-top:76px}
+.h1row{display:flex;align-items:flex-start;gap:20px;margin-bottom:26px}
+h1{
+  font-size:var(--h1size);line-height:1.02;letter-spacing:-.038em;
+  font-weight:700;max-width:15ch;
+}
+.lede{
+  font-size:19px;line-height:1.62;color:var(--ink-2);max-width:60ch;margin-bottom:34px;
+}
+.lede b{color:var(--ink);font-weight:600}
+.cta{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:16px}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:7px;
+  font-size:15px;font-weight:600;text-decoration:none;border:1px solid transparent;
+  transition:background .15s,border-color .15s,color .15s;
+}
+.btn-main{background:var(--ink);color:#fff}
+.btn-main:hover{background:var(--signal)}
+.btn-sec{background:transparent;color:var(--ink-2);border-color:var(--rule)}
+.btn-sec:hover{border-color:var(--ink-4);color:var(--ink)}
+.btn svg{width:17px;height:17px;flex:none}
+.fineprint{font-family:var(--mono);font-size:12.5px;color:var(--ink-4)}
+.fineprint .sub{display:block;margin-top:4px;color:var(--ink-4);opacity:.72}
+.fineprint b{color:var(--ink-3);font-weight:600}
+
+/* ---------- the app mockup: the hero object ---------- */
+.stage{padding:56px 0 0}
+.window{
+  border:1px solid var(--rule);border-radius:10px;background:var(--surface);
+  box-shadow:0 1px 2px rgba(22,24,29,.05),0 18px 44px -20px rgba(22,24,29,.22);
+  overflow:hidden;
+}
+.titlebar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;height:42px;padding:0 14px;
+  border-bottom:1px solid var(--rule);background:#fbfbfa;
+}
+.appid{display:flex;align-items:center;gap:9px;min-width:0}
+.appid .logo{font-size:14px}
+.appid .lt{font-weight:700;font-size:14px;letter-spacing:-.02em}
+.appid .td{width:1px;height:16px;background:var(--rule)}
+.appid .pt{font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appid .mode{
+  font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.05em;
+  background:var(--signal-wash);color:var(--signal-2);border-radius:4px;padding:2px 6px;
+}
+.topright{display:flex;align-items:center;gap:11px;flex:none}
+.live{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ok)}
+.live i{width:6px;height:6px;border-radius:50%;background:var(--ok);display:block}
+.sync{font-family:var(--mono);font-size:11px;color:var(--ink-4)}
+.icobtn{
+  width:24px;height:24px;border:1px solid var(--rule);border-radius:5px;
+  display:grid;place-items:center;color:var(--ink-3);background:var(--surface);
+}
+
+.workstation{display:flex;min-height:430px}
+.pane-l{width:var(--pane-l);flex:none;border-right:1px solid var(--rule);padding:14px 0}
+.pane-h{
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px 10px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-4);
+}
+.pane-h .n{
+  background:var(--rule-2);color:var(--ink-3);border-radius:20px;padding:1px 7px;
+  font-size:10px;letter-spacing:0;
+}
+.cat{
+  display:flex;align-items:center;gap:9px;padding:7px 14px;font-size:13.5px;
+  color:var(--ink-2);cursor:default;
+}
+.cat.on{background:var(--signal-wash);color:var(--signal-2);font-weight:600}
+.cat .ico{font-size:14px;width:17px;text-align:center}
+.cat .ct{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-4)}
+.cat.on .ct{color:var(--signal)}
+
+.pane-m{width:var(--pane-m);flex:none;border-right:1px solid var(--rule)}
+.searchrow{padding:10px 14px;border-bottom:1px solid var(--rule-2)}
+.search{
+  display:flex;align-items:center;gap:8px;border:1px solid var(--rule);border-radius:6px;
+  padding:6px 10px;color:var(--ink-4);font-size:13px;background:var(--paper);
+}
+.subhead{
+  display:flex;align-items:center;justify-content:space-between;padding:9px 14px;
+  font-size:12.5px;font-weight:600;color:var(--ink-2);border-bottom:1px solid var(--rule-2);
+}
+.subhead .sc{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--ink-4)}
+.item{padding:11px 14px;border-bottom:1px solid var(--rule-2);cursor:default}
+.item.on{background:var(--paper);box-shadow:inset 2px 0 0 var(--signal)}
+.item .t{font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:3px;line-height:1.35}
+.item .s{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.fmt{
+  display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:700;
+  letter-spacing:.05em;text-transform:uppercase;padding:1px 5px;border-radius:4px;
+  margin-left:6px;vertical-align:1px;border:1px solid transparent;
+}
+.fmt.pdf{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+.fmt.docx{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd}
+.fmt.xlsx{background:#d1fae5;color:#059669;border-color:#6ee7b7}
+.fmt.csv{background:#fef3c7;color:#d97706;border-color:#fcd34d}
+.fmt.json{background:#e0e7ff;color:#4338ca;border-color:#a5b4fc}
+.fmt.m3u8{background:#fce7f3;color:#db2777;border-color:#f9a8d4}
+.fmt.audio{background:#ccfbf1;color:#0f766e;border-color:#5eead4}
+
+.pane-r{flex:1;min-width:0;display:flex;flex-direction:column}
+.toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 16px;border-bottom:1px solid var(--rule-2);
+}
+.tb-left{display:flex;align-items:center;gap:9px;min-width:0}
+.tb-title{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb{
+  font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--ink-3);
+  background:var(--paper);border:1px solid var(--rule);border-radius:11px;padding:2px 8px;
+}
+.tb-right{display:flex;align-items:center;gap:9px;flex:none}
+.tfilter{
+  font-size:12px;color:var(--ink-4);border:1px solid var(--rule);border-radius:5px;
+  padding:4px 9px;background:var(--paper);
+}
+.extbtn{
+  display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
+  color:var(--ink-2);border:1px solid var(--rule);border-radius:5px;padding:4px 9px;
+}
+.fmt.big{font-size:10px;padding:2px 6px}
+.rbody{flex:1;padding:14px 16px;overflow:hidden}
+.grid{border:1px solid var(--rule);border-radius:6px;overflow:hidden;font-size:12.5px}
+.grid .row{display:flex;border-bottom:1px solid var(--rule-2)}
+.grid .row:last-child{border-bottom:0}
+.grid .row.hd{background:var(--paper);font-weight:600}
+.grid .c{padding:6px 10px;border-right:1px solid var(--rule-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grid .c:last-child{border-right:0}
+.grid .row.hd .c{color:var(--ink-3);font-family:var(--mono);font-size:10.5px;letter-spacing:.03em}
+.grid .c:nth-child(1){width:96px}
+.grid .c:nth-child(2){width:120px}
+.grid .c:nth-child(3){width:100px}
+.grid .c.idx{
+  width:34px;color:var(--ink-4);font-family:var(--mono);font-size:10.5px;
+  text-align:right;background:var(--paper);
+}
+.grid .row.hd .c.idx{color:var(--ink-4)}
+.doc{padding:4px 2px}
+.doc h4{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.doc .by{font-family:var(--mono);font-size:11px;color:var(--ink-4);margin-bottom:16px}
+.doc p{font-size:13.5px;color:var(--ink-2);margin-bottom:11px;max-width:52ch}
+.doc .tag{
+  display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;
+  border:1px solid var(--rule);border-radius:5px;padding:4px 9px;color:var(--ink-3);
+}
+
+/* ---------- generic section ---------- */
+section{padding:84px 0;border-top:1px solid var(--rule)}
+.sec-head{margin-bottom:44px;max-width:64ch}
+.sec-head h2{font-size:clamp(27px,3.4vw,38px);letter-spacing:-.03em;line-height:1.12;font-weight:700;margin-bottom:12px}
+.sec-head p{font-size:16.5px;color:var(--ink-2);line-height:1.6}
+.lead-ink{color:var(--ink);font-weight:600}
+
+/* ---------- the api panel ---------- */
+.apipanel{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--surface)}
+.apipanel > div{padding:30px 32px}
+.apipanel > div:first-child{border-right:1px solid var(--rule)}
+.langs-row{margin-top:18px}
+.langs-row > div{grid-column:1 / -1;border-right:0}
+.langs-row > div:first-child{border-right:0}
+.cnote{
+  font-size:13.5px;color:var(--ink-3);line-height:1.6;margin-top:14px;
+}
+.cnote code{
+  font-family:var(--mono);font-size:12px;background:var(--paper);
+  border:1px solid var(--rule);border-radius:4px;padding:0 4px;color:var(--ink-2);
+}
+.cnote a{color:var(--signal-2);font-weight:600;text-decoration:none;border-bottom:1px solid var(--signal-wash)}
+.cnote a:hover{border-bottom-color:var(--signal)}
+.ch{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-4);margin-bottom:16px}
+pre{
+  background:var(--paper);border:1px solid var(--rule);border-radius:7px;padding:16px 18px;
+  font-size:12.5px;line-height:1.75;overflow-x:auto;color:var(--ink-2);
+}
+pre .k{color:var(--signal-2);font-weight:600}
+pre .s{color:var(--amber)}
+pre .n{color:var(--ink-4)}
+pre .c{color:#8b93a1}
+.langs{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.lang{
+  font-family:var(--mono);font-size:12px;border:1px solid var(--rule);border-radius:5px;
+  padding:5px 11px;color:var(--ink-2);background:var(--paper);
+}
+.lang b{color:var(--ink);font-weight:600}
+
+/* ---------- steps ---------- */
+.steps{border-top:1px solid var(--rule)}
+.step{display:grid;grid-template-columns:180px 1fr;gap:36px;padding:26px 0;border-bottom:1px solid var(--rule)}
+.step .h{font-size:15px;font-weight:600;letter-spacing:-.01em;padding-top:2px}
+.step .h code{display:block;font-family:var(--mono);font-size:11.5px;color:var(--ink-4);font-weight:400;margin-top:5px;letter-spacing:0}
+.step .b{font-size:15.5px;color:var(--ink-2);line-height:1.65;max-width:64ch}
+.step .b b{color:var(--ink);font-weight:600}
+.step .b pre{margin-top:14px}
+
+/* ---------- formats: a table, not cards ---------- */
+.formats{border-top:1px solid var(--rule);width:100%;border-collapse:collapse}
+.formats th{
+  text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-4);font-weight:500;padding:0 0 10px;
+}
+.formats th:first-child{width:120px}
+.formats td{padding:13px 0;border-top:1px solid var(--rule-2);font-size:14.5px;color:var(--ink-2);vertical-align:top}
+.formats td:first-child{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink)}
+
+/* ---------- examples ---------- */
+.ex{border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr 1fr}
+.ex > div{padding:28px 26px;border-right:1px solid var(--rule-2)}
+.ex > div:last-child{border-right:0}
+.ex .t{font-size:17px;font-weight:600;letter-spacing:-.015em;margin-bottom:6px}
+.ex .p{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);margin-bottom:12px;display:flex;gap:8px}
+.ex .p span+span{color:var(--ink-4)}
+.ex .p span+span::before{content:"/";margin-right:8px;color:var(--rule)}
+.ex .d{font-size:14px;color:var(--ink-2);line-height:1.6;margin-bottom:16px;min-height:66px}
+.ex .a{display:block;font-size:14px;font-weight:600;color:var(--ink);text-decoration:none;padding:7px 0;border-top:1px solid var(--rule-2)}
+.ex .a:hover{color:var(--signal)}
+.ex .a span{color:var(--ink-4);font-weight:400;font-family:var(--mono);font-size:11.5px;margin-left:7px}
+
+/* ---------- comparison ---------- */
+.cmp{width:100%;border-collapse:collapse;border-top:1px solid var(--rule)}
+.cmp th,.cmp td{padding:13px 0;text-align:left;font-size:14.5px;border-bottom:1px solid var(--rule-2)}
+.cmp th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-4);font-weight:500}
+.cmp th:not(:first-child),.cmp td:not(:first-child){text-align:center;width:170px}
+.cmp td:first-child{color:var(--ink-2)}
+.cmp td.us{color:var(--signal-2);font-weight:600}
+.cmp td.them{color:var(--ink-4)}
+
+/* ---------- docs links ---------- */
+.docs{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--rule)}
+.docs a{
+  padding:22px 24px;border-right:1px solid var(--rule-2);border-bottom:1px solid var(--rule-2);
+  text-decoration:none;transition:background .15s;
+}
+.docs a:nth-child(3n){border-right:0}
+.docs a:nth-last-child(-n+3){border-bottom:0}
+.docs a:hover{background:var(--surface)}
+.docs .t{font-size:15px;font-weight:600;margin-bottom:4px}
+.docs .d{font-size:13.5px;color:var(--ink-3);line-height:1.5}
+
+/* ---------- footer ---------- */
+footer{padding:52px 0 64px;border-top:1px solid var(--rule)}
+.foot{display:flex;flex-wrap:wrap;gap:40px;justify-content:space-between;align-items:flex-start}
+.foot .links{display:flex;flex-wrap:wrap;gap:24px;font-size:13.5px}
+.foot .links a{color:var(--ink-3);text-decoration:none}
+.foot .links a:hover{color:var(--ink)}
+.foot .c{font-size:13px;color:var(--ink-4);margin-top:8px}
+
+@media (max-width:960px){
+  .workstation{flex-direction:column;min-height:0}
+  .pane-l,.pane-m{width:100%;border-right:0;border-bottom:1px solid var(--rule)}
+  .pane-l{max-height:150px;overflow:hidden}
+  .apipanel{grid-template-columns:1fr}
+  .apipanel > div:first-child{border-right:0;border-bottom:1px solid var(--rule)}
+  .ex{grid-template-columns:1fr}
+  .ex > div{border-right:0;border-bottom:1px solid var(--rule-2)}
+  .docs{grid-template-columns:1fr 1fr}
+  .step{grid-template-columns:1fr;gap:10px}
+  .cmp th:not(:first-child),.cmp td:not(:first-child){width:auto}
+}
+@media (max-width:620px){
+  .wrap{padding:0 20px}
+  nav a:not(.dl){display:none}
+  .docs{grid-template-columns:1fr}
+  .cmp{font-size:13px}
+  .cmp th:not(:first-child),.cmp td:not(:first-child){width:96px}
+  .toolbar{flex-wrap:wrap;gap:8px}
+  .tb-left{flex:1 1 100%}
+  .tb-right{flex:1 1 100%;justify-content:space-between}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <div class="brand"><img class="mark-img" src="icon.png" alt="" /><span>VoidUI</span></div>
+    <nav>
+      <a href="#api">The API</a>
+      <a href="#formats">Formats</a>
+      <a href="#examples">Examples</a>
+      <a href="#docs">Docs</a>
+      <a class="dl" href="player/VoidUI-win.zip" download>Download for Windows</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= HERO ================= -->
+<div class="wrap hero">
+  <div class="h1row">
+    <img class="h-icon" src="icon.png" alt="" />
+    <h1>Point it at an API. It becomes an app.</h1>
+  </div>
+  <p class="lede">
+    VoidUI is a small native window that renders whatever your HTTP API returns.
+    Send it <b>HTML</b> and it shows your markup. Send it <b>JSON in the 3PaneApp
+    layout</b> and it builds a browsing workspace. Or point it at a PDF, a
+    spreadsheet, a CSV. Write the backend in Python, Rust, C++, or host the JSON
+    somewhere else entirely. The viewer never asks what language you used.
+  </p>
+  <div class="cta">
+    <a class="btn btn-main" href="player/VoidUI-win.zip" download>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      Download for Windows
+    </a>
+    <a class="btn btn-sec" href="#api">See the API</a>
+  </div>
+  <p class="fineprint">4.6 MB zip — unzip it, then run <b>VoidUI.exe</b>. No installer.
+    <span class="sub">Keep <b>launcher.exe</b> in the same folder — the viewer needs it to start.</span>
+  </p>
+</div>
+
+<!-- ================= THE APP ITSELF ================= -->
+<div class="wrap stage">
+  <div class="window">
+    <div class="titlebar">
+      <div class="appid">
+        <span class="logo">⚡</span><span class="lt">VoidUI</span>
+        <span class="td"></span>
+        <span class="pt">VoidUI Omniformat Workstation</span>
+        <span class="mode">3PANE</span>
+      </div>
+      <div class="topright">
+        <span class="live"><i></i>Connected</span>
+        <span class="sync">12:04:33</span>
+        <span class="icobtn" title="Refresh">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+        </span>
+        <span class="icobtn" title="Settings">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </span>
+      </div>
+    </div>
+
+    <div class="workstation">
+      <!-- pane 1: categories -->
+      <div class="pane-l">
+        <div class="pane-h">Channels <span class="n">3</span></div>
+        <div class="cat"><span class="ico">📄</span>Documents &amp; Reports <span class="ct">2</span></div>
+        <div class="cat on"><span class="ico">📊</span>Data &amp; Spreadsheets <span class="ct">3</span></div>
+        <div class="cat"><span class="ico">🎬</span>Streaming Media <span class="ct">2</span></div>
+      </div>
+
+      <!-- pane 2: items -->
+      <div class="pane-m">
+        <div class="searchrow">
+          <div class="search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Filter articles...
+          </div>
+        </div>
+        <div class="subhead"><span>Data &amp; Spreadsheets</span><span class="sc">3</span></div>
+        <div class="item on">
+          <div class="t">Stock Prices.csv <span class="fmt csv">csv</span></div>
+          <div class="s">CSV Dataset • filterable grid</div>
+        </div>
+        <div class="item">
+          <div class="t">Sales Report Sample.xlsx <span class="fmt xlsx">xlsx</span></div>
+          <div class="s">Excel Workbook • 391 rows</div>
+        </div>
+        <div class="item">
+          <div class="t">Database Configuration.json <span class="fmt json">json</span></div>
+          <div class="s">JSON Schema • Formatted &amp; Copyable</div>
+        </div>
+      </div>
+
+      <!-- pane 3: the rendered document -->
+      <div class="pane-r">
+        <div class="toolbar">
+          <div class="tb-left">
+            <span class="fmt csv big">csv</span>
+            <span class="tb-title">Stock Prices.csv</span>
+            <span class="cb">559 rows</span>
+          </div>
+          <div class="tb-right">
+            <span class="tfilter">Search table rows...</span>
+            <span class="extbtn">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>
+              Open in Browser
+            </span>
+          </div>
+        </div>
+        <div class="rbody">
+          <div class="grid">
+            <div class="row hd"><div class="c idx">#</div><div class="c">symbol</div><div class="c">date</div><div class="c">price</div></div>
+            <div class="row"><div class="c idx">1</div><div class="c">MSFT</div><div class="c">Jan 1 2000</div><div class="c">39.81</div></div>
+            <div class="row"><div class="c idx">2</div><div class="c">MSFT</div><div class="c">Feb 1 2000</div><div class="c">36.35</div></div>
+            <div class="row"><div class="c idx">3</div><div class="c">MSFT</div><div class="c">Mar 1 2000</div><div class="c">43.22</div></div>
+            <div class="row"><div class="c idx">4</div><div class="c">MSFT</div><div class="c">Apr 1 2000</div><div class="c">28.37</div></div>
+            <div class="row"><div class="c idx">5</div><div class="c">MSFT</div><div class="c">May 1 2000</div><div class="c">25.45</div></div>
+            <div class="row"><div class="c idx">6</div><div class="c">MSFT</div><div class="c">Jun 1 2000</div><div class="c">32.54</div></div>
+            <div class="row"><div class="c idx">7</div><div class="c">MSFT</div><div class="c">Jul 1 2000</div><div class="c">28.4</div></div>
+            <div class="row"><div class="c idx">8</div><div class="c">MSFT</div><div class="c">Aug 1 2000</div><div class="c">28.4</div></div>
+            <div class="row"><div class="c idx">9</div><div class="c">MSFT</div><div class="c">Sep 1 2000</div><div class="c">24.53</div></div>
+            <div class="row"><div class="c idx">10</div><div class="c">MSFT</div><div class="c">Oct 1 2000</div><div class="c">28.02</div></div>
+            <div class="row"><div class="c idx">11</div><div class="c">MSFT</div><div class="c">Nov 1 2000</div><div class="c">23.34</div></div>
+            <div class="row"><div class="c idx">12</div><div class="c">MSFT</div><div class="c">Dec 1 2000</div><div class="c">17.65</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= THE API ================= -->
+<section id="api">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>One endpoint, two shapes</h2>
+      <p>
+        VoidUI calls a single URL on your server. What you send back decides what
+        you get: raw HTML, or JSON laid out for the <b>3PaneApp</b> view — categories
+        on the left, items in the middle, the document on the right. There is no
+        plugin system and no language binding — your daemon is just an HTTP server
+        that returns the right bytes.
+      </p>
+    </div>
+
+    <div class="apipanel">
+      <div>
+        <div class="ch">Option 1 — send HTML</div>
+<pre><span class="c">// GET http://127.0.0.1:8787/api/data</span>
+<span class="c">// Header: X-API-Key: your-key</span>
+{
+  <span class="k">"type"</span>: <span class="s">"html"</span>,
+  <span class="k">"title"</span>: <span class="s">"My Dashboard"</span>,
+  <span class="k">"content"</span>: <span class="s">"&lt;h1&gt;Processed 42 records.&lt;/h1&gt;"</span>
+}</pre>
+        <p class="cnote">
+          Your markup goes straight into the reading pane. One field, and you
+          have a desktop app.
+        </p>
+        <p class="cnote">
+          <code>content</code> can be a fragment or a whole document — a
+          <code>&lt;table&gt;</code>, a chart, a canvas sketch. Inline event
+          handlers such as <code>onclick</code> work; a
+          <code>&lt;script&gt;</code> tag does not run, because the markup is
+          inserted rather than parsed as a page.
+        </p>
+      </div>
+      <div>
+        <div class="ch">Option 2 — send a 3PaneApp catalog</div>
+<pre>{
+  <span class="k">"type"</span>: <span class="s">"json"</span>,
+  <span class="k">"layout"</span>: <span class="s">"3pane"</span>,
+  <span class="k">"categories"</span>: [
+    {
+      <span class="k">"id"</span>: <span class="s">"docs"</span>,
+      <span class="k">"title"</span>: <span class="s">"Documents"</span>,
+      <span class="k">"items"</span>: [
+        {
+          <span class="k">"id"</span>: <span class="s">"rfc"</span>,
+          <span class="k">"title"</span>: <span class="s">"RFC 9110"</span>,
+          <span class="k">"format"</span>: <span class="s">"pdf"</span>,
+          <span class="k">"url"</span>: <span class="s">"https://.../rfc9110.pdf"</span>
+        }
+      ]
+    }
+  ]
+}</pre>
+        <p class="cnote">
+          Categories on the left, items in the middle, the file on the right.
+          The `layout` has to be <code>3pane</code> and the fields have to match
+          what the player expects — the exact list is in
+          <a href="docs/creating_daemons.md">Creating daemons</a>.
+        </p>
+      </div>
+    </div>
+
+    <div class="apipanel langs-row">
+      <div>
+        <div class="ch">What you can write it in</div>
+        <p style="font-size:15px;color:var(--ink-2);line-height:1.7;margin-bottom:6px">
+          The bundled examples are Python, and each one ships as a Windows binary —
+          no interpreter, no install step. The protocol itself is HTTP and JSON, so
+          any language can serve it.
+        </p>
+        <div class="langs">
+          <span class="lang"><b>Python</b> — Flask, FastAPI, anything</span>
+          <span class="lang"><b>Rust</b> — axum, actix</span>
+          <span class="lang"><b>C++</b> — any HTTP server</span>
+          <span class="lang"><b>Go</b> — net/http</span>
+          <span class="lang"><b>Node</b>, <b>C#</b>, <b>Elixir</b></span>
+          <span class="lang"><b>A static JSON file</b> on any host</span>
+        </div>
+        <p style="font-size:14px;color:var(--ink-3);line-height:1.65;margin-top:20px">
+          A daemon publishes a <span style="font-family:var(--mono);font-size:12.5px">format</span>
+          and a <span style="font-family:var(--mono);font-size:12.5px">url</span> — never the file
+          bytes. The player downloads and parses the file itself, so a 40 MB spreadsheet
+          costs your server nothing.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HOW ================= -->
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Three steps</h2>
+      <p>No build step for the viewer, no build step for the daemon, no framework to adopt.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="h">Write an endpoint<code>any http server</code></div>
+        <div class="b">
+          Answer <code style="font-family:var(--mono);font-size:13px">/api/data</code> with JSON and
+          check the <code style="font-family:var(--mono);font-size:13px">X-API-Key</code> header. Inside
+          that JSON, set <code style="font-family:var(--mono);font-size:13px">type</code> to
+          <code style="font-family:var(--mono);font-size:13px">html</code> or
+          <code style="font-family:var(--mono);font-size:13px">json</code> and fill in the matching shape.
+          That is the whole requirement.
+        </div>
+      </div>
+      <div class="step">
+        <div class="h">Run it<code>localhost, or a hosted URL</code></div>
+        <div class="b">
+          A local daemon on <code style="font-family:var(--mono);font-size:13px">127.0.0.1</code> is the
+          usual case. It also works against a hosted endpoint: put the host in
+          <b>Daemon Host</b>, the port in <b>Port</b>, and hand out API keys yourself.
+          The player talks to it over plain HTTPS.
+        </div>
+      </div>
+      <div class="step">
+        <div class="h">Point VoidUI at it<code>settings → save &amp; connect</code></div>
+        <div class="b">
+          The window polls, renders, and keeps your data live. <b>Test Connection</b> tells you
+          whether the endpoint answers before you commit to it.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FORMATS ================= -->
+<section id="formats">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>What it can render</h2>
+      <p>
+        The player downloads each file and parses it in the browser — ZIP and OOXML
+        included, with no third-party library and no Office install on the machine.
+      </p>
+    </div>
+    <table class="formats">
+      <thead><tr><th>Format</th><th>Renders as</th><th>Also</th></tr></thead>
+      <tbody>
+        <tr><td>html</td><td>Your markup, injected into the reading pane</td><td>The simplest mode — one field, done</td></tr>
+        <tr><td>json</td><td>Syntax-coloured tree</td><td>3PaneApp mode, or a raw dump</td></tr>
+        <tr><td>pdf</td><td>Embedded reader with page count</td><td>Opens in the webview's own viewer</td></tr>
+        <tr><td>docx</td><td>Headings, lists and tables as a document</td><td>WordprocessingML, parsed directly</td></tr>
+        <tr><td>xlsx</td><td>Cell grid with sheet tabs</td><td>Shared strings and inline strings</td></tr>
+        <tr><td>csv</td><td>Table with live row filtering</td><td>Handled as a table, not a file</td></tr>
+        <tr><td>audio</td><td>Embedded player</td><td>With track metadata</td></tr>
+        <tr><td>video / m3u8</td><td>Adaptive stream player</td><td>Needs CORS headers on the host</td></tr>
+      </tbody>
+    </table>
+    <p class="cnote" style="margin-top:16px;max-width:70ch">
+      Every format except streaming is downloaded by the player's own backend, so
+      it works no matter what headers your server sends. Playlists are the
+      exception: the browser fetches them directly, so the host has to allow
+      cross-origin requests.
+    </p>
+  </div>
+</section>
+
+<!-- ================= EXAMPLES ================= -->
+<section id="examples">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Three examples, in Python</h2>
+      <p>
+        Each ships as a standalone EXE inside a zip — unzip it, run the EXE, no
+        Python needed. The source is in the zip too, if you want to write the
+        same thing in another language.
+      </p>
+    </div>
+    <div class="ex">
+      <div>
+        <div class="t">Hello World</div>
+        <div class="p"><span>port 8787</span><span>html mode</span></div>
+        <div class="d">A live dashboard of time, date, uptime and system stats. The smallest complete daemon there is.</div>
+        <a class="a" href="examples/01_hello_world/01_hello_world-win.zip" download>Download .zip <span>15.3 MB</span></a>
+        <a class="a" href="examples/01_hello_world/README.md">How to use it</a>
+        <a class="a" href="examples/01_hello_world/app.py">Source</a>
+      </div>
+      <div>
+        <div class="t">RSS Viewer</div>
+        <div class="p"><span>port 8788</span><span>3-pane json</span></div>
+        <div class="d">Three live feeds become sources, headlines and articles. Standard library only — no pip installs.</div>
+        <a class="a" href="examples/02_rss_viewer/02_rss_viewer-win.zip" download>Download .zip <span>15.4 MB</span></a>
+        <a class="a" href="examples/02_rss_viewer/README.md">How to use it</a>
+        <a class="a" href="examples/02_rss_viewer/app.py">Source</a>
+      </div>
+      <div>
+        <div class="t">Omniformat Vault</div>
+        <div class="p"><span>port 8789</span><span>every format</span></div>
+        <div class="d">A PDF, a Word file, a spreadsheet and a CSV — fetched from public URLs and parsed by the player.</div>
+        <a class="a" href="examples/03_multiformat_vault/03_multiformat_vault-win.zip" download>Download .zip <span>15.3 MB</span></a>
+        <a class="a" href="examples/03_multiformat_vault/README.md">How to use it</a>
+        <a class="a" href="examples/03_multiformat_vault/app.py">Source</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COMPARISON ================= -->
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Why not Electron</h2>
+      <p>VoidUI is a viewer, not a framework. It stays out of the way until you point it at something.</p>
+    </div>
+    <table class="cmp">
+      <thead><tr><th></th><th>VoidUI</th><th>Electron app</th><th>Browser tab</th></tr></thead>
+      <tbody>
+        <tr><td>Viewer size</td><td class="us">4.6 MB</td><td class="them">100–200 MB</td><td class="them">—</td></tr>
+        <tr><td>Launch time</td><td class="us">under a second</td><td class="them">3–8 seconds</td><td class="them">—</td></tr>
+        <tr><td>CORS</td><td class="us">none, except streaming playlists</td><td class="them">sometimes</td><td class="them">always</td></tr>
+        <tr><td>Your side of the work</td><td class="us">an HTTP endpoint</td><td class="them">Electron + JS boilerplate</td><td class="them">a whole frontend</td></tr>
+        <tr><td>Backend language</td><td class="us">anything</td><td class="them">Node, mostly</td><td class="them">anything</td></tr>
+        <tr><td>Protects local data</td><td class="us">API key auth</td><td class="them">depends</td><td class="them">risky</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= DOCS ================= -->
+<section id="docs">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Read the docs</h2>
+      <p>The protocol is documented end to end, including a C++ daemon and the security model.</p>
+    </div>
+    <div class="docs">
+      <a href="docs/overview.md"><div class="t">Overview</div><div class="d">The architecture and why it works this way</div></a>
+      <a href="docs/connecting_to_voidui.md"><div class="t">Connecting</div><div class="d">Settings, endpoints, status indicators</div></a>
+      <a href="docs/creating_daemons.md"><div class="t">Creating daemons</div><div class="d">The full format, in Python and C++</div></a>
+      <a href="docs/omniformat_guide.md"><div class="t">Omniformat guide</div><div class="d">Every format and exactly how it is parsed</div></a>
+      <a href="docs/packaging_daemons.md"><div class="t">Packaging daemons</div><div class="d">Ship yours as a standalone EXE</div></a>
+      <a href="examples/03_multiformat_vault/README.md"><div class="t">Inspect the API</div><div class="d">Read the raw JSON in a browser</div></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div>
+      <div class="brand"><span class="mark">V</span>VoidUI</div>
+      <p class="c">Point it at an API. It becomes an app.</p>
+    </div>
+    <div class="links">
+      <a href="docs/overview.md">Overview</a>
+      <a href="docs/connecting_to_voidui.md">Connecting</a>
+      <a href="docs/creating_daemons.md">Creating daemons</a>
+      <a href="docs/omniformat_guide.md">Omniformat</a>
+      <a href="docs/packaging_daemons.md">Packaging</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
