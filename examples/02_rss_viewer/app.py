@@ -9,9 +9,12 @@ import os
 import sys
 import argparse
 
-# Ensure daemon_core and local modules can be imported
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-sys.path.insert(0, os.path.dirname(__file__))
+# `daemon_core/` is the shared framework this daemon is built on. It sits in
+# the same folder as this file when the daemon runs from an unzipped download,
+# and one folder up when the daemon runs from the repo. Try both.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)                    # next to app.py
+sys.path.insert(1, os.path.dirname(_HERE))  # one level up
 
 try:
     from daemon_core.void_daemon import VoidDaemon

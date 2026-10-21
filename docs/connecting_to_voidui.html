@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Connecting to VoidUI — VoidUI</title>
+<meta name="description" content="Connecting to VoidUI" />
+<link rel="icon" type="image/png" href="../icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --paper:#fbfbf9; --surface:#fff; --ink:#16181d; --ink-2:#3d424c;
+  --ink-3:#6b7280; --ink-4:#9aa1ab; --rule:#e3e4e0; --rule-2:#eef0ec;
+  --signal:#0d7d8c; --signal-2:#0a626e; --signal-wash:#e6f4f5;
+  --font:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--font); background:var(--paper); color:var(--ink);
+  line-height:1.65; -webkit-font-smoothing:antialiased;
+  font-feature-settings:"ss01" 1;
+}
+a{color:var(--signal-2); text-decoration:none; border-bottom:1px solid var(--signal-wash)}
+a:hover{border-bottom-color:var(--signal)}
+code,kbd,pre{font-family:var(--mono)}
+::selection{background:var(--signal);color:#fff}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:2px}
+.doc{position:sticky;top:0;background:rgba(251,251,249,.9);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--rule);z-index:10}
+.doc-in{max-width:840px;margin:0 auto;padding:0 28px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;gap:18px}
+.doc-brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;
+  letter-spacing:-.02em;color:var(--ink);border-bottom:none}
+.doc-brand img{width:22px;height:22px;border-radius:6px;display:block;object-fit:cover}
+.doc-back{font-size:13.5px;color:var(--ink-3);border-bottom:none}
+.doc-back:hover{color:var(--ink)}
+main{max-width:840px;margin:0 auto;padding:52px 28px 96px}
+h1{font-size:clamp(30px,4.2vw,42px);line-height:1.12;letter-spacing:-.03em;
+  font-weight:700;margin-bottom:20px}
+h2{font-size:clamp(23px,2.8vw,30px);letter-spacing:-.025em;line-height:1.2;
+  font-weight:700;margin:52px 0 14px;padding-top:14px;border-top:1px solid var(--rule)}
+h3{font-size:19px;letter-spacing:-.015em;font-weight:600;margin:32px 0 10px}
+h4{font-size:16px;font-weight:600;margin:26px 0 8px}
+h5,h6{font-size:14px;font-weight:600;margin:22px 0 8px;color:var(--ink-2)}
+p{margin-bottom:16px;color:var(--ink-2);max-width:74ch}
+main > p:first-of-type{font-size:18px;color:var(--ink-2)}
+ul,ol{margin:0 0 18px 22px;color:var(--ink-2)}
+li{margin-bottom:7px;max-width:74ch}
+li > ul,li > ol{margin:7px 0 4px}
+li p{margin-bottom:8px}
+hr{border:0;border-top:1px solid var(--rule);margin:34px 0}
+blockquote{border-left:3px solid var(--signal);background:var(--surface);
+  padding:12px 18px;margin:0 0 18px;border-radius:0 6px 6px 0}
+blockquote p{margin-bottom:8px;color:var(--ink-2)}
+blockquote p:last-child{margin-bottom:0}
+code{font-size:.88em;background:var(--rule-2);border:1px solid var(--rule);
+  border-radius:4px;padding:1px 5px;color:var(--ink-2)}
+pre{background:var(--surface);border:1px solid var(--rule);border-radius:8px;
+  padding:16px 18px;margin:0 0 18px;overflow-x:auto;font-size:12.5px;
+  line-height:1.7;color:var(--ink-2)}
+pre code{background:none;border:0;padding:0;font-size:12.5px;color:inherit}
+table{border-collapse:collapse;width:100%;margin:0 0 20px;font-size:14.5px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-4);font-weight:500;
+  padding:0 12px 9px 0;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:11px 12px 11px 0;border-bottom:1px solid var(--rule-2);
+  color:var(--ink-2);vertical-align:top}
+td:first-child{color:var(--ink)}
+ul.task{list-style:none;margin-left:4px}
+ul.task li{padding-left:26px;position:relative}
+ul.task li > input{position:absolute;left:0;top:4px;margin:0;accent-color:var(--signal)}
+strong{color:var(--ink);font-weight:600}
+em{font-style:italic}
+del{color:var(--ink-3)}
+img{max-width:100%;height:auto}
+hr + h2{border-top:0}
+.foot{max-width:840px;margin:0 auto;padding:22px 28px 60px;border-top:1px solid var(--rule);
+  font-size:13px;color:var(--ink-4)}
+@media (max-width:620px){
+  main{padding:36px 20px 72px}
+  .doc-in{padding:0 20px}
+  .doc-back{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<nav class="doc">
+  <div class="doc-in">
+    <a class="doc-brand" href="../index.html"><img src="../icon.png" alt="" />VoidUI</a>
+    <a class="doc-back" href="../index.html">Back to the site</a>
+  </div>
+</nav>
+<main>
+<h1 id="connecting-to-voidui">Connecting to VoidUI</h1>
+<p>This guide explains how VoidUI talks to your local daemon.</p>
+<hr>
+<h2 id="overview">Overview</h2>
+<p>VoidUI is a native desktop viewer that polls a local HTTP endpoint you control.<br>
+Your daemon serves one JSON document describing a catalog; VoidUI renders it<br>
+in a three-pane workstation — categories on the left, items in the middle, the<br>
+rendered document on the right.</p>
+<pre><code>[Your Daemon] ← HTTP → [VoidUI.exe]
+   127.0.0.1:PORT                 ▲
+      any language                └── native backend: downloads files, caches them</code></pre>
+<p>The daemon can be written in <strong>any language</strong>. Python is only the bundled<br>
+example — see <a href="creating_daemons.html">Creating Daemons</a>.</p>
+<hr>
+<h2 id="step-1-launch-your-daemon">Step 1: Launch your daemon</h2>
+<p>Any daemon built on <code>VoidDaemon</code> (the shared framework in<br>
+<code>daemon_core/void_daemon.py</code>) accepts these CLI flags:</p>
+<pre><code class="lang-bash">python app.py --port 8787 --key my-secret-key</code></pre>
+<table><thead><tr>
+<th style="text-align:left">Flag</th>
+<th style="text-align:left">Default</th>
+<th style="text-align:left">Description</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left"><code>--port</code></td>
+<td style="text-align:left"><code>8787</code></td>
+<td style="text-align:left">Port to listen on</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>--key</code></td>
+<td style="text-align:left"><code>default-dev-key</code></td>
+<td style="text-align:left">API key (sent as the <code>X-API-Key</code> header)</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>--host</code></td>
+<td style="text-align:left"><code>127.0.0.1</code></td>
+<td style="text-align:left">Bind address (keep local!)</td>
+</tr>
+</tbody></table>
+<blockquote><p><strong>Note</strong>: if you change the key, set the same key in VoidUI's settings. Any<br>
+other process running on the machine can reach your port, so use a real key<br>
+for anything beyond a demo.</p></blockquote>
+<hr>
+<h2 id="step-2-open-voidui-settings">Step 2: Open VoidUI settings</h2>
+<p>Launch <code>VoidUI.exe</code> and click the <strong>⚙ Settings</strong> button (top right):</p>
+<table><thead><tr>
+<th style="text-align:left">Field</th>
+<th style="text-align:left">Example</th>
+<th style="text-align:left">Description</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left"><strong>Daemon Host / URL</strong></td>
+<td style="text-align:left"><code>http://127.0.0.1</code></td>
+<td style="text-align:left">Scheme and host of your daemon.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Port</strong></td>
+<td style="text-align:left"><code>8787</code></td>
+<td style="text-align:left">The port your daemon binds to.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Endpoint Path</strong></td>
+<td style="text-align:left"><code>/api/data</code></td>
+<td style="text-align:left">The path the player calls.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>API Key (X-API-Key)</strong></td>
+<td style="text-align:left"><code>default-dev-key</code></td>
+<td style="text-align:left">Must match the daemon's <code>--key</code>.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Auto-Refresh Interval</strong></td>
+<td style="text-align:left"><code>Every 5 seconds</code></td>
+<td style="text-align:left">Poll cadence. <code>Manual Only</code> disables polling.</td>
+</tr>
+</tbody></table>
+<p><strong>Test Connection</strong> performs one request and reports the payload's <code>type</code> and<br>
+<code>title</code>. <strong>Save &amp; Connect</strong> persists the settings and starts polling<br>
+immediately.</p>
+<h3 id="presets">Presets</h3>
+<p>The Settings modal ships quick presets for the bundled example daemons:</p>
+<table><thead><tr>
+<th style="text-align:left">Preset</th>
+<th style="text-align:left">Port</th>
+<th style="text-align:left">Description</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">Hello World (HTML)</td>
+<td style="text-align:left">8787</td>
+<td style="text-align:left">HTML mode — live time &amp; stats</td>
+</tr>
+<tr>
+<td style="text-align:left">RSS 3-Pane (JSON)</td>
+<td style="text-align:left">8788</td>
+<td style="text-align:left">3-pane JSON — three live RSS feeds</td>
+</tr>
+<tr>
+<td style="text-align:left">Omniformat Vault</td>
+<td style="text-align:left">8789</td>
+<td style="text-align:left">3-pane JSON — PDF, DOCX, XLSX, CSV, JSON, M3U8</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="step-3-what-the-endpoint-returns">Step 3: What the endpoint returns</h2>
+<p>VoidUI calls <strong>one</strong> endpoint on your daemon:</p>
+<pre><code>GET /api/data
+X-API-Key: &lt;your-key&gt;
+Accept: application/json</code></pre>
+<p>The response must be <code>Content-Type: application/json</code> and contain either:</p>
+<h3 id="mode-a-your-markup">Mode A — Your markup</h3>
+<pre><code class="lang-json">{ "type": "html", "content": "&lt;h1&gt;Hello World&lt;/h1&gt;" }</code></pre>
+<p>The response is still JSON — the markup travels as a string in <code>content</code>. The<br>
+player injects that string into the reading pane as a full HTML document.</p>
+<h3 id="mode-b-3-pane-catalog-the-usual-case">Mode B — 3-pane catalog (the usual case)</h3>
+<pre><code class="lang-json">{
+  "type": "json",
+  "layout": "3pane",
+  "title": "My Workstation",
+  "updated_at": "2026-10-20T18:00:00",
+  "categories": [
+    {
+      "id": "docs",
+      "title": "Documents",
+      "icon": "📄",
+      "badge": 1,
+      "items": [
+        {
+          "id": "rfc",
+          "title": "RFC 9110 — HTTP Semantics.pdf",
+          "format": "pdf",
+          "subtitle": "194 pages",
+          "preview": "The definitive HTTP reference.",
+          "url": "https://www.rfc-editor.org/rfc/rfc9110.pdf",
+          "meta": { "author": "IETF", "pages": 194 }
+        }
+      ]
+    }
+  ]
+}</code></pre>
+<p>The shape is <code>categories[] → items[]</code>. Each item carries a <code>format</code> and a<br>
+<code>url</code>, and the <strong>player</strong> downloads and renders it — see the<br>
+<a href="omniformat_guide.html">Omniformat Guide</a> for every supported format.</p>
+<p><strong>A daemon publishes DESCRIBE, never BYTES.</strong> Do not base64-encode a<br>
+spreadsheet into the payload; hand over a URL and let the player fetch it.</p>
+<hr>
+<h2 id="health-check">Health check</h2>
+<p><code>/api/health</code> is optional. It is not polled by the player, but it is handy<br>
+for monitoring and for your own start-up scripts:</p>
+<pre><code>GET /api/health</code></pre>
+<pre><code class="lang-json">{ "name": "My Daemon", "status": "ok", "timestamp": "…", "uptime_seconds": 419 }</code></pre>
+<hr>
+<h2 id="reading-the-payload-in-a-browser">Reading the payload in a browser</h2>
+<p>The player is not the only way to look at what your daemon publishes. The<br>
+<code>/api/data</code> endpoint is plain HTTP, so you can inspect it with curl, with<br>
+Postman, or in a browser tab.</p>
+<p>The catch is authentication: the endpoint wants an <code>X-API-Key</code> header, and a<br>
+browser's address bar can only send a URL. So the bare URL returns <code>401</code> —<br>
+that is the auth working, not a fault.</p>
+<p>The Python framework accepts the key as a query parameter for exactly this<br>
+case:</p>
+<pre><code>http://127.0.0.1:8787/api/data?key=default-dev-key</code></pre>
+<p>Paste that into a browser and you get the raw JSON. To load it from a page<br>
+instead (which lets you pretty-print it), use <code>fetch</code>:</p>
+<pre><code class="lang-html">&lt;script&gt;
+(async () =&gt; {
+  const r = await fetch('http://127.0.0.1:8787/api/data?key=default-dev-key');
+  document.body.textContent = JSON.stringify(await r.json(), null, 2);
+})();
+&lt;/script&gt;</code></pre>
+<p>This works from a <code>file://</code> page too — the daemon sends<br>
+<code>Access-Control-Allow-Origin: *</code> and answers the <code>OPTIONS</code> preflight.</p>
+<p>A key in a query string can end up in browser history and in access logs, so<br>
+use the query form for local inspection only. The header is the real channel.</p>
+<hr>
+<h2 id="connection-status-indicators">Connection status indicators</h2>
+<table><thead><tr>
+<th style="text-align:left">Indicator</th>
+<th style="text-align:left">Meaning</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">🟢 Green dot</td>
+<td style="text-align:left">Daemon reachable, last poll successful</td>
+</tr>
+<tr>
+<td style="text-align:left">🟡 Yellow dot</td>
+<td style="text-align:left">Polling, last response slow (&gt;2s)</td>
+</tr>
+<tr>
+<td style="text-align:left">🔴 Red dot</td>
+<td style="text-align:left">Daemon unreachable or returned an error</td>
+</tr>
+</tbody></table>
+<p>The header also shows the last successful sync time and a <strong>Refresh</strong> button<br>
+to poll immediately.</p>
+<hr>
+<h2 id="how-the-player-fetches-your-files">How the player fetches your files</h2>
+<p>When an item is selected, the player asks its <strong>own backend</strong> to download the<br>
+item's <code>url</code>:</p>
+<ol>
+<li>The backend fetches the URL (no CORS, no CSP, no page sandbox limits).</li>
+<li>It writes the bytes into the app cache directory.</li>
+<li>It hands the page a <strong>path</strong>, not the bytes.</li>
+<li>The page reads that file back and parses it — ZIP/OOXML for <code>.xlsx</code> and
+<code>.docx</code>, CSV and JSON for text formats.</li>
+</ol>
+<p>The page then displays it: a grid for spreadsheets, a document for Word files,<br>
+the webview's own PDF viewer for PDFs, <code>&lt;video&gt;</code>/<code>&lt;audio&gt;</code> for media.</p>
+<p><strong>Your daemon never has to read a file, parse a PDF, or encode a spreadsheet.</strong><br>
+Point the item at a URL — on your own machine or anywhere on the internet —<br>
+and the player handles the rest.</p>
+<h3 id="caching">Caching</h3>
+<p>Downloaded files land in the app's cache directory:</p>
+<pre><code>&lt;app cache&gt;/documents/&lt;name&gt;&lt;ext&gt;</code></pre>
+<p>The extension is guessed from the URL or the response's <code>Content-Type</code>, so a<br>
+URL like <code>…/rfc9110</code> still lands as <code>rfc9110.pdf</code>. Files are reused on the<br>
+next visit, and the cache can be cleared at any time.</p>
+</main>
+<div class="foot">Rendered from the Markdown source in this repository.</div>
+</body>
+</html>

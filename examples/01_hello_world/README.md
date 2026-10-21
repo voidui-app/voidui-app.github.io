@@ -111,9 +111,66 @@ mode is the one to use when your script already produces markup.
 
 ## Source
 
-`app.py` — the whole daemon, 133 lines. It uses the shared
-`daemon_core` framework, which supplies the CLI flags, the `X-API-Key` check,
-CORS headers, and the `/api/health` endpoint.
+| File | What it is |
+|---|---|
+| `app.py` | The daemon. 133 lines — the markup it serves and the CLI. |
+| `daemon_core/` | The shared framework, as a package folder. **Required.** |
+| `README.md` | This file. |
+
+### `daemon_core/` is not optional
+
+`app.py` does not implement the HTTP layer itself. It hands its data to
+`VoidDaemon`, which lives in `daemon_core/void_daemon.py`, and that class
+supplies everything a VoidUI daemon needs to be a daemon:
+
+- the `GET /api/data` endpoint the player polls
+- the `X-API-Key` check that returns `401` without the right key
+- the CORS headers and `OPTIONS` preflight
+- the `GET /api/health` endpoint
+- the `--port`, `--host`, `--key` and `--debug` command-line flags
+
+Without the folder, the import fails and the daemon never starts:
+
+```
+ModuleNotFoundError: No module named 'daemon_core'
+```
+
+The `.exe` has the framework frozen inside, which is why running the binary
+needs nothing; running the source needs the folder.
+
+### Where the framework sits
+
+There are two layouts, and the import block in `app.py` looks in both:
+
+| Situation | Where `daemon_core/` is |
+|---|---|
+| Unzipped download | the same folder as `app.py` |
+| Working in the repo | one folder up, at `examples/daemon_core/` |
+
+That is the whole of the import block — the first path is the download, the
+second is the repo:
+
+```python
+import os
+import sys
+
+# `daemon_core/` is the shared framework this daemon is built on. It sits in
+# the same folder as this file when the daemon runs from an unzipped download,
+# and one folder up when the daemon runs from the repo. Try both.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)                    # next to app.py
+sys.path.insert(1, os.path.dirname(_HERE))  # one level up
+
+try:
+    from daemon_core.void_daemon import VoidDaemon
+except ImportError:
+    # Standalone fallback if copied outside repo
+    from void_daemon import VoidDaemon
+```
+
+### What your own daemon looks like
+
+`app.py` is the whole thing. The framework does the rest:
 
 ```python
 from daemon_core import VoidDaemon
@@ -130,13 +187,25 @@ if __name__ == "__main__":
                data_handler=my_data_handler).run()
 ```
 
-`daemon_core` is not bundled into the `.exe` — the frozen build has it inside.
-To run from source you need it on your path:
+The frozen `.exe` has `daemon_core` bundled inside it, so the binary needs
+nothing installed. The zip ships the folder too, so the source run works out
+of the box:
 
 ```bash
 pip install flask
 python app.py
 ```
 
-The zip carries `void_daemon.py` next to `app.py` — that is the whole of
-`daemon_core`, flattened — so the source run needs nothing else but Flask.
+That is all the source run needs: Flask, plus the `daemon_core` folder sitting
+next to `app.py`.
+
+### Compiling it yourself
+
+`app.py` and `daemon_core/` in one folder is everything PyInstaller needs:
+
+```bash
+python -m PyInstaller --onefile --name "01_hello_world" app.py
+```
+
+The [Packaging daemons](../../docs/packaging_daemons.md) guide has the
+full walkthrough, including the `.spec` file the bundled examples use.

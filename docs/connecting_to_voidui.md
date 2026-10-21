@@ -14,7 +14,7 @@ rendered document on the right.
 ```
 [Your Daemon] ← HTTP → [VoidUI.exe]
    127.0.0.1:PORT                 ▲
-      any language                └── tinyjs backend: downloads files, caches them
+      any language                └── native backend: downloads files, caches them
 ```
 
 The daemon can be written in **any language**. Python is only the bundled
@@ -24,8 +24,8 @@ example — see [Creating Daemons](creating_daemons.md).
 
 ## Step 1: Launch your daemon
 
-Any daemon built on `VoidDaemon` (see `daemon_core/void_daemon.py`) accepts
-these CLI flags:
+Any daemon built on `VoidDaemon` (the shared framework in
+`daemon_core/void_daemon.py`) accepts these CLI flags:
 
 ```bash
 python app.py --port 8787 --key my-secret-key

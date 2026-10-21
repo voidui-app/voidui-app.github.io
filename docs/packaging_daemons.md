@@ -4,6 +4,52 @@ This guide shows how to package any VoidUI daemon into a portable `.exe` file us
 
 ---
 
+## What a daemon folder contains
+
+A daemon is a folder. To compile one, that folder needs three things:
+
+| Requirement | What it is | Which examples |
+|---|---|---|
+| `app.py` | The daemon itself — the data it serves and the CLI. | all three |
+| `daemon_core/` | The shared framework: the `/api/data` endpoint, the `X-API-Key` check, the CORS headers and the CLI flags. **Required.** | all three |
+| extra modules | Any other `.py` your daemon imports. | `rss_parser.py` in example 02 |
+
+So a daemon folder looks like this:
+
+```
+my_daemon/
+├── app.py                 ← the daemon
+├── daemon_core/           ← the shared framework
+│   ├── __init__.py
+│   └── void_daemon.py
+└── my_modules.py          ← optional: whatever else your daemon imports
+```
+
+`daemon_core/` has to be **next to `app.py`** — the same folder, or one folder
+up when the daemon runs from the repo. It is the HTTP layer — the endpoint,
+the auth check, the headers, the flags — and `app.py` only holds your data.
+Without the folder, the import fails and the daemon never starts:
+
+```
+ModuleNotFoundError: No module named 'daemon_core'
+```
+
+### Where `daemon_core/` lives
+
+There are two places you will meet it, and the daemon's import block looks in
+both:
+
+| Situation | Where `daemon_core/` is |
+|---|---|
+| Running from the repo | `examples/daemon_core/` — one copy, shared by every example |
+| Running from a download | The same folder as `app.py`, inside the zip |
+
+The bundled examples keep one shared copy at the `examples/` root. The zips
+each carry their own copy next to `app.py`, so an unzipped daemon runs with
+`python app.py` and nothing else to set up.
+
+---
+
 ## Prerequisites
 
 ```bash
@@ -17,21 +63,66 @@ python -m PyInstaller --version
 # Should print: 6.x.x
 ```
 
+The daemon itself needs **Flask** — that is what `daemon_core` is built on:
+
+```bash
+pip install flask
+```
+
 ---
 
-## Two Ways to Build
+## The steps to compile
 
-### Option A — a `.spec` file (recommended)
+### Step 1 — get the folder right
 
-A `.spec` file records the build as code. The bundled examples each have one
-at the repo root (`01_hello_world.spec`, `02_rss_viewer.spec`,
-`03_multiformat_vault.spec`).
+Copy the daemon and the framework into one folder and make sure the names
+match exactly:
+
+```
+my_daemon/
+├── app.py
+├── daemon_core/
+│   ├── __init__.py
+│   └── void_daemon.py
+└── my_modules.py      ← optional: whatever else your daemon imports
+```
+
+`app.py` must import the framework the way the bundled examples do, so the
+daemon works whether `daemon_core/` is next to it or one folder up:
+
+```python
+import os
+import sys
+
+# `daemon_core/` is the shared framework this daemon is built on. It sits in
+# the same folder as this file when the daemon runs from an unzipped download,
+# and one folder up when the daemon runs from the repo. Try both.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)                    # next to app.py
+sys.path.insert(1, os.path.dirname(_HERE))  # one level up
+
+try:
+    from daemon_core.void_daemon import VoidDaemon
+except ImportError:
+    # Standalone fallback if copied outside repo
+    from void_daemon import VoidDaemon
+```
+
+### Step 2 — build it
+
+There are two ways. Both produce the same result: a single `my_daemon.exe`.
+
+#### Option A — a `.spec` file (recommended)
+
+A `.spec` file records the build as code. The bundled examples each ship one
+at the project root, named after the daemon
+(`01_hello_world.spec`, `02_rss_viewer.spec`, `03_multiformat_vault.spec`).
 
 ```bash
 python -m PyInstaller --noconfirm --clean \
-  --distpath examples/03_multiformat_vault \
-  --workpath build/03_multiformat_vault \
-  03_multiformat_vault.spec
+  --distpath examples/my_daemon \
+  --workpath build/my_daemon \
+  my_daemon.spec
 ```
 
 | Flag | Purpose |
@@ -53,9 +144,17 @@ import os
 
 ROOT = SPECPATH  # the directory containing this .spec file
 
+# `daemon_core` lives at the examples/ root and is shared by every example
+# daemon; a daemon's own modules (rss_parser) live in its own folder. Both
+# have to be on the search path.
+PATHEX = [
+    os.path.join(ROOT, 'examples'),
+    os.path.join(ROOT, 'examples', 'my_daemon'),
+]
+
 a = Analysis(
     [os.path.join(ROOT, 'examples', 'my_daemon', 'app.py')],
-    pathex=[ROOT],  # so `daemon_core` is importable at build time
+    pathex=PATHEX,
     binaries=[],
     datas=[],
     hiddenimports=[],
@@ -92,22 +191,26 @@ exe = EXE(
 
 `pathex` matters: PyInstaller resolves imports at **build** time, so
 `daemon_core` must be on the search path or the build produces an exe that
-crashes on startup with `ModuleNotFoundError`.
+crashes on startup with `ModuleNotFoundError`. Two entries are needed: the
+folder holding `daemon_core/`, and the daemon's own folder for its extra
+modules.
 
-### Option B — a direct command line
+#### Option B — a direct command line
 
-For a throwaway daemon with no `.spec` file:
+For a throwaway daemon with no `.spec` file, run this from the `examples/`
+folder:
 
 ```bash
 python -m PyInstaller \
   --noconfirm \
   --onefile \
   --clean \
-  --paths . \
+  --paths "." \
+  --paths "my_daemon" \
   --name "my_daemon" \
-  --distpath "examples/my_daemon" \
-  --workpath "build/my_daemon" \
-  "examples/my_daemon/app.py"
+  --distpath "my_daemon" \
+  --workpath "../build/my_daemon" \
+  "my_daemon/app.py"
 ```
 
 | Flag | Purpose |
@@ -115,14 +218,31 @@ python -m PyInstaller \
 | `--onefile` | Bundles everything into a single portable `.exe` |
 | `--noconfirm` | Overwrites output without prompting |
 | `--clean` | Clears build cache before starting |
-| `--paths` | Adds the repo root to Python's import search path (needed for `daemon_core`) |
+| `--paths` | Adds a directory to Python's import search path — needs it twice |
 | `--name` | Output filename (without `.exe`) |
 | `--distpath` | Where to place the final `.exe` |
 | `--workpath` | Temp build directory (safe to delete) |
 
-Use `--paths .` — a relative path — rather than an absolute one. An absolute
+Two `--paths` entries again: `"."` is the folder holding `daemon_core/`, and
+`"my_daemon"` is the daemon's own folder. Use relative paths — an absolute
 path baked into a build command means the next person (or CI) has to edit it
 before the build works.
+
+### Step 3 — check the result
+
+Run the `.exe` and confirm it starts:
+
+```cmd
+examples\my_daemon\my_daemon.exe --port 8800 --key testkey
+```
+
+Then connect VoidUI to `http://127.0.0.1:8800` with key `testkey`.
+
+A quick check that the daemon is actually serving, without opening the player:
+
+```cmd
+curl -H "X-API-Key: testkey" http://127.0.0.1:8800/api/data
+```
 
 ---
 
@@ -138,6 +258,10 @@ examples/
 
 The `build/` directory contains intermediate files — it is gitignored and safe
 to delete.
+
+The `.exe` has `daemon_core` frozen inside it, so it runs on its own. The
+source still needs the folder next to it — which is why the published zips
+ship both.
 
 ---
 
@@ -160,6 +284,9 @@ python -m PyInstaller --noconfirm --clean \
   03_multiformat_vault.spec
 ```
 
+All three read the shared `examples/daemon_core/` — one copy of the framework
+serves every daemon.
+
 > If a build fails with `PermissionError: ... Access is denied` on the `.exe`,
 > a copy of the old executable is still running. Stop it and build again.
 
@@ -173,9 +300,9 @@ using `--add-data`:
 ```bash
 python -m PyInstaller \
   --onefile \
-  --add-data "examples/my_daemon/templates;templates" \
-  --add-data "examples/my_daemon/files;files" \
-  "examples/my_daemon/app.py"
+  --add-data "my_daemon/templates;templates" \
+  --add-data "my_daemon/files;files" \
+  "my_daemon/app.py"
 ```
 
 In a `.spec` file, the same thing goes in the `datas` list:
@@ -184,7 +311,7 @@ In a `.spec` file, the same thing goes in the `datas` list:
 a = Analysis(
     [SCRIPT],
     pathex=PATHEX,
-    datas=[('examples/my_daemon/templates', 'templates')],
+    datas=[(os.path.join(ROOT, 'examples', 'my_daemon', 'templates'), 'templates')],
     ...
 )
 ```
@@ -261,21 +388,28 @@ curl -H "X-API-Key: testkey" http://127.0.0.1:8800/api/data
 
 ## Distribution Structure
 
-When distributing:
+When distributing, every download is a zip and the folder behind it is never
+published. What the user sees:
+
+- `VoidUI-win.zip` — the player: `VoidUI.exe` and `launcher.exe`.
+- `01_hello_world-win.zip` — the daemon EXE, its `app.py`, its `daemon_core/`
+  and its README.
+- `02_rss_viewer-win.zip` — the same, plus `rss_parser.py`.
+- `03_multiformat_vault-win.zip` — the same.
+
+Each daemon zip carries its **own** copy of `daemon_core/`, sitting next to
+`app.py`. The repo keeps one shared copy at `examples/daemon_core/`; the zip
+step copies that folder in, so an unzipped daemon runs with `python app.py`
+and nothing else to set up:
 
 ```
-VoidUI-Release/
-├── player/
-│   └── VoidUI-win.zip   ← The desktop viewer: VoidUI.exe + launcher.exe
-├── examples/
-│   ├── 01_hello_world/
-│   │   └── 01_hello_world-win.zip   ← The EXE, app.py and README.md
-│   ├── 02_rss_viewer/
-│   │   └── 02_rss_viewer-win.zip
-│   └── 03_multiformat_vault/
-│       └── 03_multiformat_vault-win.zip
-└── docs/
-    └── *.md
+01_hello_world-win.zip
+├── 01_hello_world.exe
+├── app.py
+├── daemon_core/          ← copied in from examples/daemon_core/
+│   ├── __init__.py
+│   └── void_daemon.py
+└── README.md
 ```
 
 Users download a zip, unzip it, double-click a daemon `.exe`, then launch
@@ -286,13 +420,13 @@ WebView2 window and `VoidUI.exe` is the backend that talks to it; the backend
 looks for the launcher beside itself at startup and exits if it is missing:
 
 ```
-Error: tinyjs launcher binary not found (looked at: <dir>/launcher.exe)
+Error: launcher binary not found (looked at: <dir>/launcher.exe)
 ```
 
 A single-file download of `VoidUI.exe` therefore arrives broken. Zip the two
 together and link the zip.
 
-> **Not `tinyjs publish`.** That command writes an *updater payload* — the
-> source bundle with the binaries prepended. Unzipping it gives you
-> `bridge.js` and `frontend/`, not a runnable app. Zip `dist/` by hand for
-> the human download.
+> **Zip by hand.** The build tool also has a `publish` command, but it writes
+> an *updater payload* for the app's own auto-update channel — the source
+> bundle with the binaries prepended. That is not a runnable app for a person
+> to download. Zip the two binaries yourself for the human download.

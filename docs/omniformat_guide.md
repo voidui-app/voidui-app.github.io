@@ -217,11 +217,12 @@ def detect_format(filename):
 
 ## Live example
 
-The **Omniformat Vault** example daemon (`examples/03_multiformat_vault/`)
-demonstrates every format against real, publicly reachable documents. Run it:
+The **Omniformat Vault** example daemon demonstrates every format against real,
+publicly reachable documents. Unzip `03_multiformat_vault-win.zip` and run the
+`.exe`, or run the source with `--port 8789`:
 
 ```bash
-python examples/03_multiformat_vault/app.py --port 8789
+python app.py --port 8789
 ```
 
 Then connect VoidUI to `http://127.0.0.1:8789` with the key

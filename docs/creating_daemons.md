@@ -163,14 +163,26 @@ data and keeps the URL for the "open in browser" action.
 ### Python (the bundled helper)
 
 `daemon_core/void_daemon.py` gives you CLI parsing, API-key auth, CORS
-headers and `/api/health` for free.
+headers and `/api/health` for free. Put the `daemon_core/` folder **next to**
+your `app.py`, and add both that folder and its parent to the import path, so
+the daemon works whether the framework sits beside it or one level up:
 
 ```python
 import sys, os
 from datetime import datetime
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from daemon_core.void_daemon import VoidDaemon
+# `daemon_core/` is the shared framework this daemon is built on. It sits in
+# the same folder as this file when the daemon runs from an unzipped download,
+# and one folder up when the daemon runs from the repo. Try both.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)                    # next to app.py
+sys.path.insert(1, os.path.dirname(_HERE))  # one level up
+
+try:
+    from daemon_core.void_daemon import VoidDaemon
+except ImportError:
+    # Standalone fallback if copied outside repo
+    from void_daemon import VoidDaemon
 
 
 def payload():
@@ -311,4 +323,4 @@ python -m PyInstaller --onefile --name "my_daemon" app.py
 Ship the `.exe` to users and list the dependencies in your docs — a frozen
 binary needs no `requirements.txt` on the user's machine.
 
-See `docs/packaging_daemons.md` for the complete guide.
+See the [Packaging Daemons](packaging_daemons.md) guide for the complete walkthrough.

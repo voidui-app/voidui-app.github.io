@@ -145,14 +145,84 @@ original link — the player can open it in your system browser.
 |---|---|
 | `app.py` | The daemon. 42 lines. |
 | `rss_parser.py` | Feed fetching, XML parsing, and the TTL cache. |
+| `daemon_core/` | The shared framework, as a package folder. **Required.** |
+| `README.md` | This file. |
 
-`daemon_core` (the shared framework) is bundled inside the `.exe`. To run
-from source you need Flask and the `daemon_core` package on your path:
+### `daemon_core/` is not optional
+
+`app.py` does not implement the HTTP layer itself. It hands its data to
+`VoidDaemon`, which lives in `daemon_core/void_daemon.py`, and that class
+supplies everything a VoidUI daemon needs to be a daemon:
+
+- the `GET /api/data` endpoint the player polls
+- the `X-API-Key` check that returns `401` without the right key
+- the CORS headers and `OPTIONS` preflight
+- the `GET /api/health` endpoint
+- the `--port`, `--host`, `--key` and `--debug` command-line flags
+
+Without the folder, the import fails and the daemon never starts:
+
+```
+ModuleNotFoundError: No module named 'daemon_core'
+```
+
+The `.exe` has the framework frozen inside, which is why running the binary
+needs nothing; running the source needs the folder.
+
+### Where the framework sits
+
+There are two layouts, and the import block in `app.py` looks in both:
+
+| Situation | Where `daemon_core/` is |
+|---|---|
+| Unzipped download | the same folder as `app.py` |
+| Working in the repo | one folder up, at `examples/daemon_core/` |
+
+That is the whole of the import block — the first path is the download, the
+second is the repo:
+
+```python
+import os
+import sys
+
+# `daemon_core/` is the shared framework this daemon is built on. It sits in
+# the same folder as this file when the daemon runs from an unzipped download,
+# and one folder up when the daemon runs from the repo. Try both.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)                    # next to app.py
+sys.path.insert(1, os.path.dirname(_HERE))  # one level up
+
+try:
+    from daemon_core.void_daemon import VoidDaemon
+except ImportError:
+    # Standalone fallback if copied outside repo
+    from void_daemon import VoidDaemon
+```
+
+`rss_parser.py` is this daemon's own module, so it sits in the same folder as
+`app.py` in both layouts.
+
+### Running it from source
+
+`daemon_core` is bundled inside the `.exe`. The zip ships it as a folder too,
+so the source run works out of the box:
 
 ```bash
 pip install flask
 python app.py
 ```
 
-The zip carries `void_daemon.py` next to `app.py` — that is the whole of
-`daemon_core`, flattened — so the source run needs nothing else but Flask.
+That is all the source run needs: Flask, plus the `daemon_core` folder sitting
+next to `app.py`.
+
+### Compiling it yourself
+
+`app.py`, `rss_parser.py` and `daemon_core/` in one folder is everything
+PyInstaller needs:
+
+```bash
+python -m PyInstaller --onefile --name "02_rss_viewer" app.py
+```
+
+The [Packaging daemons](../../docs/packaging_daemons.md) guide has the
+full walkthrough, including the `.spec` file the bundled examples use.

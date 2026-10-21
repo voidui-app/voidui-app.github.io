@@ -1,6 +1,6 @@
 # VoidUI
 
-**Point it at an API. It becomes an app.**
+**A universal, decoupled developer desktop interface tool**
 
 VoidUI is a small native Windows viewer (4.6 MB zipped) that renders whatever
 an HTTP API returns — your own markup, a 3-pane JSON catalog, a PDF, a
@@ -13,9 +13,9 @@ documentation are here as they are served.
 | Download | Size | What's inside |
 |---|---|---|
 | [VoidUI-win.zip](player/VoidUI-win.zip) | 4.6 MB | `VoidUI.exe`, `launcher.exe` |
-| [01_hello_world-win.zip](examples/01_hello_world/01_hello_world-win.zip) | 15.4 MB | the daemon EXE, `app.py`, `void_daemon.py`, `README.md` |
-| [02_rss_viewer-win.zip](examples/02_rss_viewer/02_rss_viewer-win.zip) | 15.5 MB | the daemon EXE, `app.py`, `rss_parser.py`, `void_daemon.py`, `README.md` |
-| [03_multiformat_vault-win.zip](examples/03_multiformat_vault/03_multiformat_vault-win.zip) | 15.4 MB | the daemon EXE, `app.py`, `void_daemon.py`, `README.md` |
+| [01_hello_world-win.zip](examples/01_hello_world/01_hello_world-win.zip) | 15.4 MB | the daemon EXE, `app.py`, `daemon_core/`, `README.md` |
+| [02_rss_viewer-win.zip](examples/02_rss_viewer/02_rss_viewer-win.zip) | 15.5 MB | the daemon EXE, `app.py`, `rss_parser.py`, `daemon_core/`, `README.md` |
+| [03_multiformat_vault-win.zip](examples/03_multiformat_vault/03_multiformat_vault-win.zip) | 15.4 MB | the daemon EXE, `app.py`, `daemon_core/`, `README.md` |
 
 The viewer is 4.6 MB as a zip and 7.8 MB unpacked — it ships as two binaries
 and both are needed. The daemon zips are PyInstaller builds, which bundle a
@@ -23,9 +23,10 @@ Python runtime; that is where their 15 MB comes from, and it is why they need
 no interpreter on the target machine.
 
 Each daemon zip also carries the daemon's source, so you can read it or run
-it yourself. `void_daemon.py` is the shared framework flattened out of
-`daemon_core` — with it and Flask, `python app.py` starts the daemon from
-source.
+it yourself. `daemon_core/` is the shared framework, shipped as a package
+folder next to `app.py` — it is not optional: it holds the `/api/data`
+endpoint, the `X-API-Key` check, the CORS headers and the CLI flags. With it
+and Flask, `python app.py` starts the daemon from source.
 
 ---
 
@@ -133,19 +134,60 @@ For a custom domain, drop a `CNAME` file in the repository root and point an
 ## What is in here
 
 ```
-index.html                      the landing page
-readme.md                       this file
-icon.png, favicon.png           the app icon
-player/VoidUI-win.zip           the viewer — VoidUI.exe + launcher.exe
-examples/                       three daemon zips, each with the EXE, source and README
-docs/                           the five documents the site links to
+VoidUI/
+├── index.html                      the landing page
+├── readme.md                       this file
+├── icon.png, favicon.png           the app icon
+├── banner.jpg                      the social banner
+├── player/
+│   └── VoidUI-win.zip              the viewer — VoidUI.exe + launcher.exe
+├── examples/
+│   ├── daemon_core/                the shared framework
+│   ├── 01_hello_world/
+│   │   ├── 01_hello_world-win.zip  the EXE, app.py, daemon_core/, README
+│   │   ├── app.py                  the daemon source
+│   │   └── README.md               run instructions
+│   ├── 02_rss_viewer/
+│   │   ├── 02_rss_viewer-win.zip
+│   │   ├── app.py
+│   │   ├── rss_parser.py
+│   │   └── README.md
+│   └── 03_multiformat_vault/
+│       ├── 03_multiformat_vault-win.zip
+│       ├── app.py
+│       └── README.md
+└── docs/
+    ├── overview.md                 the architecture
+    ├── connecting_to_voidui.md     settings, endpoints, status
+    ├── creating_daemons.md         the full response format
+    ├── omniformat_guide.md         every supported format
+    └── packaging_daemons.md        shipping a daemon as a standalone EXE
 ```
+
+Every document ships twice: `docs/overview.md` is the source you read in a
+code editor or on GitHub, and `docs/overview.html` is the same text rendered
+as a page. The site links to the `.html` files; the `.md` files stay in the
+repository as the editable originals. Regenerate the HTML after editing the
+Markdown:
+
+```bash
+python tools/md2html.py Publish
+```
+
+The converter is dependency-free Python, so it needs nothing installed.
+
+Each example folder holds the daemon's source. The `daemon_core/` package — the
+shared framework that provides the `/api/data` endpoint, the API-key check,
+the CORS headers and the CLI flags — sits once at `examples/daemon_core/`, and
+each daemon zip carries its own copy next to `app.py`. It is required:
+without it the import fails and the daemon never starts.
 
 Every download on the page is a zip. The loose `.exe` files are not published
 — a single-file download of `VoidUI.exe` would arrive without its launcher and
 would not start.
 
-The viewer's source is not part of this distribution. The protocol and the
-file formats are documented in `docs/`, and a daemon can be written in any
-language that can serve HTTP. The example daemons do ship their source, since
-they are meant to be read and rewritten.
+**The viewer's own source is not part of this distribution.** The player ships
+as two binaries and nothing else; the protocol and the file formats are
+documented in `docs/`, and a daemon can be written in any language that can
+serve HTTP. The example daemons *do* ship their source, since they are meant
+to be read and rewritten.
