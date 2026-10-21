@@ -19,8 +19,9 @@ reading pane.
 
 ## Architecture
 
-- **Zero pip dependencies** — Python standard library only
-  (`urllib.request` + `xml.etree.ElementTree`).
+- **No feed-parsing dependencies** — the feed side is standard library only
+  (`urllib.request` + `xml.etree.ElementTree`). The HTTP server around it is
+  Flask, same as the other examples.
 - **In-memory caching** with a 5-minute TTL, so a refresh cycle does not
   hammer three news sites.
 - Handles both **RSS 2.0** and **Atom**.
@@ -142,7 +143,7 @@ original link — the player can open it in your system browser.
 
 | File | What it is |
 |---|---|
-| `app.py` | The daemon. ~60 lines. |
+| `app.py` | The daemon. 42 lines. |
 | `rss_parser.py` | Feed fetching, XML parsing, and the TTL cache. |
 
 `daemon_core` (the shared framework) is bundled inside the `.exe`. To run
@@ -152,3 +153,6 @@ from source you need Flask and the `daemon_core` package on your path:
 pip install flask
 python app.py
 ```
+
+The zip carries `void_daemon.py` next to `app.py` — that is the whole of
+`daemon_core`, flattened — so the source run needs nothing else but Flask.

@@ -23,7 +23,7 @@ VoidUI changes this paradigm:
          │ (Runs background HTTP server on 127.0.0.1:PORT)
          ▼
 [ VoidDaemon Engine ] ──> Secured via X-API-Key Header
-         │ (Serves raw HTML DOM or 3-Pane structured JSON)
+         │ (Serves JSON: your markup, or 3-Pane structured)
          ▼
 [ VoidUI Desktop Viewer (VoidUI.exe + launcher.exe) ] ──> Configured via Settings Panel (URL, Port, Key, Polling)
 ```

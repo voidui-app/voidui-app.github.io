@@ -73,12 +73,12 @@ primary channel, and the player only ever uses the header.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `type` | `"json"` \| `"html"` | `"json"` = the 3-pane workstation. `"html"` = raw HTML body. |
+| `type` | `"json"` \| `"html"` | `"json"` = the 3-pane workstation. `"html"` = your markup. |
 | `layout` | `"3pane"` | Present on JSON payloads. |
 | `title` | string | Shown in the player's header. |
 | `updated_at` | ISO-8601 string | Optional. |
 | `categories` | array | The groups shown in the left pane. |
-| `content` | string | **Only for `type: "html"`** — the HTML body itself. |
+| `content` | string | **Only for `type: "html"`** — the markup itself, as a string. |
 
 > **How HTML mode renders.** The markup is inserted into the reading pane
 > rather than loaded as a page. Inline event handlers (`onclick`, `onerror`)

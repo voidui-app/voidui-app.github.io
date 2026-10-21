@@ -83,13 +83,14 @@ Accept: application/json
 
 The response must be `Content-Type: application/json` and contain either:
 
-### Mode A — Raw HTML
+### Mode A — Your markup
 
 ```json
 { "type": "html", "content": "<h1>Hello World</h1>" }
 ```
 
-The `content` is injected into the viewer pane as a full HTML document.
+The response is still JSON — the markup travels as a string in `content`. The
+player injects that string into the reading pane as a full HTML document.
 
 ### Mode B — 3-pane catalog (the usual case)
 

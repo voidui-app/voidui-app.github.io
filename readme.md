@@ -2,13 +2,30 @@
 
 **Point it at an API. It becomes an app.**
 
-VoidUI is a small native Windows viewer (6.7 MB) that renders whatever an HTTP
-API returns — your own HTML, a 3-pane JSON catalog, a PDF, a spreadsheet. The
-backend can be written in any language, and it does not have to run on your
-machine: a local daemon and a hosted endpoint work the same way.
+VoidUI is a small native Windows viewer (4.6 MB zipped) that renders whatever
+an HTTP API returns — your own markup, a 3-pane JSON catalog, a PDF, a
+spreadsheet. The backend can be written in any language, and it does not have
+to run on your machine: a local daemon and a hosted endpoint work the same way.
 
-This folder is the public distribution. Its contents go online as-is — GitHub
-Pages, Netlify, or any static host.
+This is the published distribution. The viewer, the example daemons and the
+documentation are here as they are served.
+
+| Download | Size | What's inside |
+|---|---|---|
+| [VoidUI-win.zip](player/VoidUI-win.zip) | 4.6 MB | `VoidUI.exe`, `launcher.exe` |
+| [01_hello_world-win.zip](examples/01_hello_world/01_hello_world-win.zip) | 15.4 MB | the daemon EXE, `app.py`, `void_daemon.py`, `README.md` |
+| [02_rss_viewer-win.zip](examples/02_rss_viewer/02_rss_viewer-win.zip) | 15.5 MB | the daemon EXE, `app.py`, `rss_parser.py`, `void_daemon.py`, `README.md` |
+| [03_multiformat_vault-win.zip](examples/03_multiformat_vault/03_multiformat_vault-win.zip) | 15.4 MB | the daemon EXE, `app.py`, `void_daemon.py`, `README.md` |
+
+The viewer is 4.6 MB as a zip and 7.8 MB unpacked — it ships as two binaries
+and both are needed. The daemon zips are PyInstaller builds, which bundle a
+Python runtime; that is where their 15 MB comes from, and it is why they need
+no interpreter on the target machine.
+
+Each daemon zip also carries the daemon's source, so you can read it or run
+it yourself. `void_daemon.py` is the shared framework flattened out of
+`daemon_core` — with it and Flask, `python app.py` starts the daemon from
+source.
 
 ---
 
@@ -39,20 +56,23 @@ raw JSON in a normal browser.
 ## The idea
 
 Most developers write a good script and then stall at the UI. The options are
-a terminal, a 100 MB Electron app, or a browser tab and a CORS fight.
+a terminal, a 100–200 MB Electron app, or a browser tab and a CORS fight.
 
 VoidUI takes a third route: the script serves JSON over HTTP, and the viewer
 renders it. There is no frontend to build and no framework to adopt.
 
-**One endpoint, two shapes.** The `type` field picks the shape:
+**One endpoint, two shapes.** The response is always JSON; the `type` field
+picks what the player does with it:
 
 | `type` | What you send | What you get |
 |---|---|---|
 | `html` | `content` with your markup | Your HTML, in the reading pane |
 | `json` | `layout: "3pane"` and `categories[]` | A browsing workspace: categories, items, detail |
 
-The 3-pane JSON shape has to match the one the player expects — the exact
-field list is in [Creating daemons](docs/creating_daemons.md).
+So the markup in `html` mode travels as a string *inside* a JSON object — the
+daemon never writes an HTML document to the socket. The 3-pane JSON shape has
+to match the one the player expects — the exact field list is in
+[Creating daemons](docs/creating_daemons.md).
 
 **The protocol is language-agnostic.** A daemon is any HTTP server that returns
 the right JSON. The bundled examples are Python and ship as Windows binaries,
@@ -66,8 +86,8 @@ never reads a PDF or base64-encodes a spreadsheet, so a 40 MB document costs
 your daemon nothing.
 
 **Local or hosted, your call.** A daemon on `127.0.0.1` is the usual case. A
-hosted endpoint works too — put the host in **Daemon Host**, the port in
-**Port**, and hand out API keys yourself. The player talks to it over plain
+hosted endpoint works too — put the address in **Daemon Host / URL**, the port
+in **Port**, and hand out API keys yourself. The player talks to it over plain
 HTTPS.
 
 **One exception: streaming playlists.** Files are fetched by the player's own
@@ -87,142 +107,26 @@ Read the docs for the details:
 
 ---
 
-## Deploying the site
+## Hosting this yourself
 
-### GitHub Pages (recommended)
+The whole distribution is static — HTML, markdown, and a few zip files. Serve
+it from any static host.
 
-1. Push the repo to GitHub.
-2. **Settings → Pages** → Source: `main` branch, folder `/Publish`.
-3. The site is served at `https://your-org.github.io/voidui/`.
+**GitHub Pages** — the site is published from the `voidui.github.io` repository:
+the contents of this folder are the repository root, and Pages serves the
+`main` branch. Push and it goes live.
 
-Everything the page links to lives inside this folder, so the site is
-self-contained — there are no `../` paths to break.
+**Netlify / Vercel** — drag the folder onto Netlify Drop, or point a build at
+it with no command and the root as the publish directory.
 
-For a custom domain, drop a `CNAME` file here and point an `A` or `CNAME`
-record at GitHub's servers.
-
-> **On GitHub Releases:** Pages serves files from the repository, but a
-> Release asset is served from a different URL behind a redirect. Linking the
-> download button to a Release asset is more reliable for large binaries and
-> gives you versioned downloads. To switch, change the `href` on the download
-> button in `index.html` to the Release URL — the `download` attribute is
-> harmless either way.
-
-### Netlify / Vercel Drop
-
-Zip this folder and drag it onto Netlify Drop. The publish directory is the
-root of the zip.
-
-### Self-hosted
+**Your own server** — any static file server will do:
 
 ```bash
-npx serve -s Publish --listen 3000
+npx serve -s . --listen 3000
 ```
 
----
-
-## Keeping the site current
-
-**New player build**
-
-```bash
-cd viewer && tinyjs build
-```
-
-That produces `viewer/dist/VoidUI.exe` and `viewer/dist/launcher.exe`. Repack
-them into the download zip:
-
-```bash
-python - <<'PY'
-import zipfile, os
-out = 'Publish/player/VoidUI-win.zip'
-os.remove(out) if os.path.exists(out) else None
-with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
-    for name in ['VoidUI.exe', 'launcher.exe']:
-        zi = zipfile.ZipInfo(name, date_time=(2026, 10, 21, 0, 0, 0))
-        zi.external_attr = 0o755 << 16
-        z.writestr(zi, open(os.path.join('viewer/dist', name), 'rb').read())
-print(round(os.path.getsize(out) / 1048576, 2), 'MB')
-PY
-```
-
-Then update the size quoted in `index.html` — the meta description, the hero
-fineprint, the comparison table and the download button all point at the zip,
-and a stale number is the easiest thing to get wrong.
-
-> **Do not ship `tinyjs publish`'s zip.** `tinyjs publish` writes
-> `dist/publish/VoidUI-1.0.0-win.zip`, which is the *updater payload* — a
-> source bundle with the binaries prepended, and unzipping it gives you
-> `bridge.js` and `frontend/`, not a runnable app. The download zip above is
-> the plain folder a person can unzip and run.
-
-**Changed docs**
-
-```bash
-cp docs/*.md Publish/docs/
-```
-
-**New or changed example**
-
-```bash
-python -m PyInstaller --noconfirm --clean \
-  --distpath examples/03_multiformat_vault --workpath build/03_multiformat_vault \
-  03_multiformat_vault.spec
-```
-
-Then repack the example zip — it carries the EXE and the source together:
-
-```bash
-python - <<'PY'
-import zipfile, os
-src, out = 'examples/03_multiformat_vault', 'Publish/examples/03_multiformat_vault/03_multiformat_vault-win.zip'
-os.remove(out) if os.path.exists(out) else None
-with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
-    for f in ['03_multiformat_vault.exe', 'app.py', 'README.md']:
-        zi = zipfile.ZipInfo(f, date_time=(2026, 10, 21, 0, 0, 0))
-        zi.external_attr = 0o755 << 16
-        z.writestr(zi, open(os.path.join(src, f), 'rb').read())
-print(round(os.path.getsize(out) / 1048576, 2), 'MB')
-PY
-```
-
-The `--distpath` and `--workpath` flags are required — PyInstaller takes the
-output directory from the command line, not from the spec file. A spec cannot
-redirect it.
-
-The daemon EXEs bundle `daemon_core`, so a change to the framework means
-every daemon EXE has to be rebuilt:
-
-```bash
-for n in 01_hello_world 02_rss_viewer 03_multiformat_vault; do
-  python -m PyInstaller --noconfirm --clean \
-    --distpath "examples/$n" --workpath "build/$n" "$n.spec"
-done
-```
-
-Then repack all three example zips the same way as above.
-
-**Changed landing page**
-
-`index.html` is hand-written HTML and CSS — no build step, no framework, no
-CDN scripts. Edit it and reload.
-
----
-
-## Two things to know before publishing
-
-**`launcher.exe` is not optional.** `VoidUI.exe` looks for it in the same
-directory at startup and exits immediately if it is missing:
-
-```
-Error: tinyjs launcher binary not found (looked at: <dir>/launcher.exe)
-```
-
-Both files are tinyjs build artifacts, and the download zip carries them
-together. Do not rename `launcher.exe`, and do not drop it from the zip.
-
-**`idea.md` is not published.** It is internal working notes, so it is ignored
-by git and will not reach the public folder.
+For a custom domain, drop a `CNAME` file in the repository root and point an
+`A` or `CNAME` record at GitHub's servers.
 
 ---
 
@@ -241,5 +145,7 @@ Every download on the page is a zip. The loose `.exe` files are not published
 — a single-file download of `VoidUI.exe` would arrive without its launcher and
 would not start.
 
-Everything else in the repository — the viewer source, the daemon framework,
-the build specs, the tests — lives outside this folder and is not published.
+The viewer's source is not part of this distribution. The protocol and the
+file formats are documented in `docs/`, and a daemon can be written in any
+language that can serve HTTP. The example daemons do ship their source, since
+they are meant to be read and rewritten.

@@ -111,7 +111,7 @@ mode is the one to use when your script already produces markup.
 
 ## Source
 
-`app.py` — the whole daemon is about 60 lines. It uses the shared
+`app.py` — the whole daemon, 133 lines. It uses the shared
 `daemon_core` framework, which supplies the CLI flags, the `X-API-Key` check,
 CORS headers, and the `/api/health` endpoint.
 
@@ -137,3 +137,6 @@ To run from source you need it on your path:
 pip install flask
 python app.py
 ```
+
+The zip carries `void_daemon.py` next to `app.py` — that is the whole of
+`daemon_core`, flattened — so the source run needs nothing else but Flask.

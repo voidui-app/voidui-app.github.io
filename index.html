@@ -377,7 +377,7 @@ footer{padding:52px 0 64px;border-top:1px solid var(--rule)}
   </div>
   <p class="lede">
     VoidUI is a small native window that renders whatever your HTTP API returns.
-    Send it <b>HTML</b> and it shows your markup. Send it <b>JSON in the 3PaneApp
+    Send it <b>your markup</b> and it shows it. Send it <b>JSON in the 3PaneApp
     layout</b> and it builds a browsing workspace. Or point it at a PDF, a
     spreadsheet, a CSV. Write the backend in Python, Rust, C++, or host the JSON
     somewhere else entirely. The viewer never asks what language you used.
@@ -492,11 +492,12 @@ footer{padding:52px 0 64px;border-top:1px solid var(--rule)}
     <div class="sec-head">
       <h2>One endpoint, two shapes</h2>
       <p>
-        VoidUI calls a single URL on your server. What you send back decides what
-        you get: raw HTML, or JSON laid out for the <b>3PaneApp</b> view — categories
-        on the left, items in the middle, the document on the right. There is no
-        plugin system and no language binding — your daemon is just an HTTP server
-        that returns the right bytes.
+        VoidUI calls a single URL on your server. The response is always JSON;
+        the <b>type</b> field decides what you get: your markup, or JSON laid
+        out for the <b>3PaneApp</b> view — categories on the left, items in the
+        middle, the document on the right. There is no plugin system and no
+        language binding — your daemon is just an HTTP server that returns the
+        right bytes.
       </p>
     </div>
 
@@ -666,15 +667,15 @@ footer{padding:52px 0 64px;border-top:1px solid var(--rule)}
         <div class="t">Hello World</div>
         <div class="p"><span>port 8787</span><span>html mode</span></div>
         <div class="d">A live dashboard of time, date, uptime and system stats. The smallest complete daemon there is.</div>
-        <a class="a" href="examples/01_hello_world/01_hello_world-win.zip" download>Download .zip <span>15.3 MB</span></a>
+        <a class="a" href="examples/01_hello_world/01_hello_world-win.zip" download>Download .zip <span>15.4 MB</span></a>
         <a class="a" href="examples/01_hello_world/README.md">How to use it</a>
         <a class="a" href="examples/01_hello_world/app.py">Source</a>
       </div>
       <div>
         <div class="t">RSS Viewer</div>
         <div class="p"><span>port 8788</span><span>3-pane json</span></div>
-        <div class="d">Three live feeds become sources, headlines and articles. Standard library only — no pip installs.</div>
-        <a class="a" href="examples/02_rss_viewer/02_rss_viewer-win.zip" download>Download .zip <span>15.4 MB</span></a>
+        <div class="d">Three live feeds become sources, headlines and articles. The feed side is standard library only.</div>
+        <a class="a" href="examples/02_rss_viewer/02_rss_viewer-win.zip" download>Download .zip <span>15.5 MB</span></a>
         <a class="a" href="examples/02_rss_viewer/README.md">How to use it</a>
         <a class="a" href="examples/02_rss_viewer/app.py">Source</a>
       </div>
@@ -682,7 +683,7 @@ footer{padding:52px 0 64px;border-top:1px solid var(--rule)}
         <div class="t">Omniformat Vault</div>
         <div class="p"><span>port 8789</span><span>every format</span></div>
         <div class="d">A PDF, a Word file, a spreadsheet and a CSV — fetched from public URLs and parsed by the player.</div>
-        <a class="a" href="examples/03_multiformat_vault/03_multiformat_vault-win.zip" download>Download .zip <span>15.3 MB</span></a>
+        <a class="a" href="examples/03_multiformat_vault/03_multiformat_vault-win.zip" download>Download .zip <span>15.4 MB</span></a>
         <a class="a" href="examples/03_multiformat_vault/README.md">How to use it</a>
         <a class="a" href="examples/03_multiformat_vault/app.py">Source</a>
       </div>
